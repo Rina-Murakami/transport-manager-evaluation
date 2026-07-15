@@ -349,6 +349,51 @@ def main():
 
         with info_col2:
             st.metric("所属", department if department else "未入力")
-
+        with info_col3:
+            st.metric("総合平均点", f"{average_score} / 5.0")
+        st.subheader("総合評価")
+        st.info(get_overall_comment(average_score))
+        st.subheader("レーダーチャート")
+        fig = create_radar_chart(skill_scores)
+        st.plotly_chart(fig, use_container_width=True)
+        st.subheader("項目別スコア")
+        score_df = pd.DataFrame({
+            "スキル項目": list(skill_scores.keys()),
+            "平均点": list(skill_scores.values()),
+            "評価レベル": [get_level(score) for score in skill_scores.values()],
+            "分析コメント": [
+                get_comment(skill, score)
+                for skill, score in skill_scores.items()
+            ]
+        })
+        st.dataframe(score_df, use_container_width=True, hide_index=True)
+        st.subheader("強み 上位3項目")
+        for skill, score in strengths:
+            st.success(f"{skill}：{score}点 - {get_comment(skill, score)}")
+        st.subheader("改善優先項目 下位3項目")
+        for skill, score in improvements:
+            st.warning(f"{skill}：{score}点 - {get_comment(skill, score)}")
+        st.subheader("育成アクション提案")
+        for skill, score in improvements:
+            st.markdown(f"### {skill}")
+            if score >= 3.0:
+                st.write(
+                    "基礎力はあります。現場での実践機会を増やし、上位者からのフィードバックを定期的に受けることで、さらに伸ばせます。"
+                )
+            elif score >= 2.0:
+                st.write(
+                    "改善が必要です。関連する業務手順を再確認し、1か月単位で具体的な改善目標を設定しましょう。"
+                )
+            else:
+                st.write(
+                    "重点的な支援が必要です。研修、同行指導、週次面談を組み合わせて、基本行動の定着から始めましょう。"
+                )
+        csv = score_df.to_csv(index=False).encode("utf-8-sig")
+        st.download_button(
+            label="分析結果CSVをダウンロード",
+            data=csv,
+            file_name="manager_assessment_result.csv",
+            mime="text/csv"
+        )
 if __name__ == "__main__":
     main()
